@@ -1,0 +1,101 @@
+---
+title: "A predictive model for runs scored in a baseball game"
+author: "Geoff Cooper [ geoffrey.cooper@ryerson.ca ]"
+date: "June 9, 2020"
+output:
+  html_document:
+    df_print: paged
+subtitle: Literature Review - Proof of Concept Model
+---
+### load packages
+```{r}
+# install.packages("ggplot2")
+```
+
+### set working directory
+```{r}
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# getwd() 
+```
+
+### open tor_games dataset
+```{r}
+tor_games = read.csv("tor_games_20200609.csv")  # read csv file 
+tor_games
+```
+
+### create tor_games_training subset, training data - player performance in game
+```{r}
+tor_games_training <- data.frame(tor_games$game_date,tor_games$tor_runs,tor_games$drurb001_ops_game,tor_games$bichb001_ops_game,tor_games$biggc002_ops_game,tor_games$davij007_ops_game,tor_games$fishd001_ops_game,tor_games$galvf001_ops_game,tor_games$gricr001_ops_game,tor_games$guerv002_ops_game,tor_games$hernt002_ops_game,tor_games$gurrl001_ops_game,tor_games$jansd001_ops_game,tor_games$maill001_ops_game,tor_games$mcgur002_ops_game,tor_games$mckib001_ops_game,tor_games$pillk001_ops_game,tor_games$smoaj001_ops_game,tor_games$sogae001_ops_game,tor_games$tellr001_ops_game)
+names(tor_games_training) <- c('game_date','tor_runs','drurb001_ops','bichb001_ops','biggc002_ops','davij007_ops','fishd001_ops','galvf001_ops','gricr001_ops','guerv002_ops','hernt002_ops','gurrl001_ops','jansd001_ops','maill001_ops','mcgur002_ops','mckib001_ops','pillk001_ops','smoaj001_ops','sogae001_ops','tellr001_ops')
+tor_games_training
+```
+
+### create tor_games_test subset, test data - player performance average to date
+```{r}
+tor_games_test <- data.frame(tor_games$game_date,tor_games$tor_runs,tor_games$drurb001_ops_todate,tor_games$bichb001_ops_todate,tor_games$biggc002_ops_todate,tor_games$davij007_ops_todate,tor_games$fishd001_ops_todate,tor_games$galvf001_ops_todate,tor_games$gricr001_ops_todate,tor_games$guerv002_ops_todate,tor_games$hernt002_ops_todate,tor_games$gurrl001_ops_todate,tor_games$jansd001_ops_todate,tor_games$maill001_ops_todate,tor_games$mcgur002_ops_todate,tor_games$mckib001_ops_todate,tor_games$pillk001_ops_todate,tor_games$smoaj001_ops_todate,tor_games$sogae001_ops_todate,tor_games$tellr001_ops_todate)
+names(tor_games_test) <- c('game_date','tor_runs','drurb001_ops','bichb001_ops','biggc002_ops','davij007_ops','fishd001_ops','galvf001_ops','gricr001_ops','guerv002_ops','hernt002_ops','gurrl001_ops','jansd001_ops','maill001_ops','mcgur002_ops','mckib001_ops','pillk001_ops','smoaj001_ops','sogae001_ops','tellr001_ops')
+tor_games_test
+```
+
+### train regression model - ops game
+```{r}
+model_fit <- lm(tor_runs~drurb001_ops+bichb001_ops+biggc002_ops+davij007_ops+fishd001_ops+galvf001_ops+gricr001_ops+guerv002_ops+hernt002_ops+gurrl001_ops+jansd001_ops+maill001_ops+mcgur002_ops+mckib001_ops+pillk001_ops+smoaj001_ops+sogae001_ops+tellr001_ops, tor_games_training)
+summary(model_fit)
+```
+
+### use predictive model on Training data - ops todate
+```{r}
+model_predict_training <- predict(model_fit, tor_games_training)
+actuals_preds_training <- data.frame(cbind(actuals=tor_games_training$tor_runs, predicteds=model_predict_training))
+correlation_accuracy_training <- cor(actuals_preds_training)
+correlation_accuracy_training
+actuals_preds_training
+```
+### histogram of runs/game, Training data, actuals vs predicteds
+```{r}
+library(ggplot2)
+actuals <- data.frame(tor_games_training$tor_runs)
+actuals$dataset <- 'Actual'
+names(actuals) <- c('Runs','Dataset')
+predicteds <- data.frame(model_predict_training)
+predicteds$dataset <- 'Predicted'
+names(predicteds) <- c('Runs','Dataset')
+runs <- rbind(actuals, predicteds)
+ggplot(runs, aes(x=Runs, color=Dataset, fill=Dataset)) + geom_histogram(binwidth=1, alpha=0.5, position="dodge") + scale_fill_manual(values=c("darkblue", "lightblue")) + 
+scale_color_manual(values=c("white", "white")) + labs(title="Histogram of Runs/Game by Toronto Blue Jays (2019 Season)\nActuals vs Training Set",x="Runs", y="Count") + theme_classic()
+```
+
+### plot of runs/game Training data, actuals vs predicteds
+```{r}
+plot(actuals_preds_training$predicteds, actuals_preds_training$actuals)
+abline(lm(actuals_preds_training$actuals~actuals_preds_training$predicteds), col="red")
+```
+
+### use predictive model on Test data - ops todate
+```{r}
+model_predict_test <- predict(model_fit, tor_games_test)
+actuals_preds_test <- data.frame(cbind(actuals=tor_games_test$tor_runs, predicteds=model_predict_test))
+correlation_accuracy_test <- cor(actuals_preds_test)
+correlation_accuracy_test
+actuals_preds_test
+```
+
+### histogram of runs/game, test set, actuals vs predicteds
+```{r}
+actuals <- data.frame(tor_games_training$tor_runs)
+actuals$dataset <- 'Actual'
+names(actuals) <- c('Runs','Dataset')
+predicteds <- data.frame(model_predict_test)
+predicteds$dataset <- 'Predicted'
+names(predicteds) <- c('Runs','Dataset')
+runs <- rbind(actuals, predicteds)
+ggplot(runs, aes(x=Runs, color=Dataset, fill=Dataset)) + geom_histogram(binwidth=1, alpha=0.5, position="dodge") + scale_fill_manual(values=c("darkblue", "lightblue")) + 
+scale_color_manual(values=c("white", "white")) + labs(title="Histogram of Runs/Game by Toronto Blue Jays (2019 Season)\nActuals vs Test Set",x="Runs", y="Count") + theme_classic()
+```
+
+### plot of runs/game Test data, actuals vs predicteds
+```{r}
+plot(actuals_preds_test$predicteds, actuals_preds_test$actuals)
+abline(lm(actuals_preds_test$actuals~actuals_preds_test$predicteds), col="red")
+```
