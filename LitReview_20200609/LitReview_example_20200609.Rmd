@@ -7,6 +7,9 @@ output:
     df_print: paged
 subtitle: Literature Review - Proof of Concept Model
 ---
+### Description
+A proof of concept model using a subset of features proposed for the final model. Independent variables are limited to Blue Jays players' offensive statistics (OPS) only. Missing features are metrics for opposing pitching, team defense, home field advantage, and park factor. Training set is composed of game-by-game OPS, Test set is season to date OPS average.
+
 ### load packages
 ```{r}
 # install.packages("ggplot2")
