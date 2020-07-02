@@ -33,14 +33,14 @@ tor_games
 
 ## 1. Create datasets
 
-### create training dataset - game-by-game WHIP, DER and OPS
+### create Training dataset - game-by-game WHIP, DER and OPS
 ```{r}
 tor_games_training <- data.frame(tor_games$tor_runs,tor_games$game_park_factor,tor_games$tor_home,tor_games$opp_pitcher_whip_game,tor_games$opp_team_der_game,tor_games$drurb001_ops_game,tor_games$bichb001_ops_game,tor_games$biggc002_ops_game,tor_games$davij007_ops_game,tor_games$fishd001_ops_game,tor_games$galvf001_ops_game,tor_games$gricr001_ops_game,tor_games$guerv002_ops_game,tor_games$hernt002_ops_game,tor_games$gurrl001_ops_game,tor_games$jansd001_ops_game,tor_games$maill001_ops_game,tor_games$mcgur002_ops_game,tor_games$mckib001_ops_game,tor_games$pillk001_ops_game,tor_games$smoaj001_ops_game,tor_games$sogae001_ops_game,tor_games$tellr001_ops_game)
 names(tor_games_training) <- c('tor_runs','game_park_factor','tor_home','opp_pitcher_whip','opp_team_der','drurb001_ops','bichb001_ops','biggc002_ops','davij007_ops','fishd001_ops','galvf001_ops','gricr001_ops','guerv002_ops','hernt002_ops','gurrl001_ops','jansd001_ops','maill001_ops','mcgur002_ops','mckib001_ops','pillk001_ops','smoaj001_ops','sogae001_ops','tellr001_ops')
 tor_games_training
 ```
 
-### create test dataset - season to date average WHIP, DER and OPS, last 150 games
+### create Test dataset - season to date average WHIP, DER and OPS, last 150 games
 ```{r}
 library(dplyr)
 tor_games_test <- data.frame(tor_games$game_date,tor_games$tor_runs,tor_games$game_park_factor,tor_games$tor_home,tor_games$opp_pitcher_whip_todate,tor_games$opp_team_der_todate,tor_games$drurb001_ops_todate,tor_games$bichb001_ops_todate,tor_games$biggc002_ops_todate,tor_games$davij007_ops_todate,tor_games$fishd001_ops_todate,tor_games$galvf001_ops_todate,tor_games$gricr001_ops_todate,tor_games$guerv002_ops_todate,tor_games$hernt002_ops_todate,tor_games$gurrl001_ops_todate,tor_games$jansd001_ops_todate,tor_games$maill001_ops_todate,tor_games$mcgur002_ops_todate,tor_games$mckib001_ops_todate,tor_games$pillk001_ops_todate,tor_games$smoaj001_ops_todate,tor_games$sogae001_ops_todate,tor_games$tellr001_ops_todate)
@@ -50,7 +50,7 @@ tor_games_test = subset(tor_games_test, select = -c(game_date))
 tor_games_test
 ```
 
-## 2. Train regression model - baseline
+## 2. Train model - baseline
 
 ### train regression model - WHIP, DER, OPS game values
 ```{r}
@@ -58,7 +58,7 @@ model_fit <- lm(tor_runs~game_park_factor+tor_home+opp_pitcher_whip+opp_team_der
 summary(model_fit)
 ```
 
-### use predictive model on Training data
+### evaluate model on Training data
 ```{r}
 model_predict_training <- predict(model_fit, tor_games_training)
 actuals_preds_training <- data.frame(cbind(actuals=tor_games_training$tor_runs, predicteds=model_predict_training))
@@ -81,7 +81,7 @@ predicteds$dataset <- 'Predicted'
 names(predicteds) <- c('Runs','Dataset')
 runs <- rbind(actuals, predicteds)
 ggplot(runs, aes(x=Runs, y=..count.., color=Dataset, fill=Dataset)) + geom_histogram(binwidth=1, alpha=0.5, position="dodge") + geom_density(alpha=0) + scale_fill_manual(values=c("darkblue", "lightblue")) + 
-scale_color_manual(values=c("darkblue", "lightblue")) + labs(title="Histogram of Runs/Game by Toronto Blue Jays (2019 Season)\nActuals vs Training Set",x="Runs", y="Games") + theme_classic()
+scale_color_manual(values=c("darkblue", "lightblue")) + labs(title="Histogram of Runs/Game by Toronto Blue Jays (2019 Season)\nActuals vs Training Set results",x="Runs", y="Games") + theme_classic()
 ```
 
 ### plot of runs/game, Training data, actuals vs predicteds
@@ -90,9 +90,9 @@ plot(actuals_preds_training$predicteds, actuals_preds_training$actuals, main="Pl
 abline(lm(actuals_preds_training$actuals~actuals_preds_training$predicteds), col="red")
 ```
 
-## 3. Test regression model - baseline
+## 3. Evaluate model - baseline
 
-### use predictive model on Test data
+### evaluate model on Test data
 ```{r}
 model_predict_test <- predict(model_fit, tor_games_test)
 actuals_preds_test <- data.frame(cbind(actuals=tor_games_test$tor_runs, predicteds=model_predict_test))
@@ -124,7 +124,7 @@ predicteds$dataset <- 'Predicted'
 names(predicteds) <- c('Runs','Dataset')
 runs <- rbind(actuals, predicteds)
 ggplot(runs, aes(x=Runs, y=..count.., color=Dataset, fill=Dataset)) + geom_histogram(binwidth=1, alpha=0.5, position="dodge") + geom_density(alpha=0) + scale_fill_manual(values=c("darkblue", "lightblue")) + 
-scale_color_manual(values=c("darkblue", "lightblue")) + labs(title="Histogram of Runs/Game by Toronto Blue Jays (2019 Season)\nActuals vs Test Set - baseline model",x="Runs", y="Games") + theme_classic()
+scale_color_manual(values=c("darkblue", "lightblue")) + labs(title="Histogram of Runs/Game by Toronto Blue Jays (2019 Season)\nActuals vs Test Set results - baseline model",x="Runs", y="Games") + theme_classic()
 ```
 
 ### plot of runs/game Test data, actuals vs predicteds
@@ -133,7 +133,7 @@ plot(actuals_preds_test$predicteds, actuals_preds_test$actuals, main="Plot of ru
 abline(lm(actuals_preds_test$actuals~actuals_preds_test$predicteds), col="red")
 ```
 
-## 4. Revise regression model
+## 4. Revise model
 
 ### revise model using feature selection
 ```{r}
@@ -151,7 +151,7 @@ tor_games_training <- tor_games_training %>% filter(tor_runs < 13)
 tor_games_test <- tor_games_test %>% filter(tor_runs < 13)
 ```
 
-## 5. Train regression model - revised
+## 5. Train model - revised
 
 ### train revised regression model - use only important WHIP, DER, OPS game values
 ```{r}
@@ -159,7 +159,7 @@ model_fit <- lm(tor_runs~opp_pitcher_whip+opp_team_der+biggc002_ops+gricr001_ops
 summary(model_fit)
 ```
 
-## 6. Test regression model - revised
+## 6. Evaluate model - revised
 
 ### use revised model on Test data - WHIP, DER, OPS todate average values
 ```{r}
@@ -193,7 +193,7 @@ predicteds$dataset <- 'Predicted'
 names(predicteds) <- c('Runs','Dataset')
 runs <- rbind(actuals, predicteds)
 ggplot(runs, aes(x=Runs, y=..count.., color=Dataset, fill=Dataset)) + geom_histogram(binwidth=1, alpha=0.5, position="dodge") + geom_density(alpha=0) + scale_fill_manual(values=c("darkblue", "lightblue")) + 
-scale_color_manual(values=c("darkblue", "lightblue")) + labs(title="Histogram of Runs/Game by Toronto Blue Jays (2019 Season)\nActuals vs Test Set - revised model",x="Runs", y="Games") + theme_classic()
+scale_color_manual(values=c("darkblue", "lightblue")) + labs(title="Histogram of Runs/Game by Toronto Blue Jays (2019 Season)\nActuals vs Test Set results - revised model",x="Runs", y="Games") + theme_classic()
 ```
 
 ### plot of runs/game Test data, actuals vs predicteds
