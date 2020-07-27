@@ -5,17 +5,19 @@ date: "July 27, 2020"
 output:
   html_document:
     df_print: paged
-subtitle: CKME136 - Initial Results
+subtitle: CKME136 - Final Results
 ---
 ### Description
-Initial results for a model containing all features proposed for the final model.
-Training set is composed of game-by-game WHIP, DER and OPS, Test set is season to date average WHIP, DER and OPS.
+A final model containing all features.
+Training set is composed of game-by-game WHIP, DER and OPS.
+Test set is season to date average WHIP, DER and OPS.
 
 ### load packages
 ```{r}
 # install.packages("FNN")
 # install.packages("rpart")
 # install.packages("ggplot2")
+# install.packages("gridExtra")
 # install.packages("tidyverse")
 # install.packages("dplyr")
 # install.packages('Boruta')
@@ -23,7 +25,8 @@ Training set is composed of game-by-game WHIP, DER and OPS, Test set is season t
 
 ### set working directory
 ```{r}
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd("/Users/geoffcooper/Dropbox/CKME136/ckme136/FinalResults_20200727")
 wd = getwd() 
 ```
 
@@ -44,13 +47,67 @@ head(tor_games_training)
 ```
 
 ### Test dataset - season to date average WHIP, DER and OPS, last 150 games
-```{r}
+```{r message=FALSE}
 library(dplyr)
 tor_games_test <- data.frame(tor_games$game_date,tor_games$tor_runs,tor_games$game_park_factor,tor_games$tor_home,tor_games$opp_pitcher_whip_todate,tor_games$opp_team_der_todate,tor_games$drurb001_ops_todate,tor_games$bichb001_ops_todate,tor_games$biggc002_ops_todate,tor_games$davij007_ops_todate,tor_games$fishd001_ops_todate,tor_games$galvf001_ops_todate,tor_games$gricr001_ops_todate,tor_games$guerv002_ops_todate,tor_games$hernt002_ops_todate,tor_games$gurrl001_ops_todate,tor_games$jansd001_ops_todate,tor_games$maill001_ops_todate,tor_games$mcgur002_ops_todate,tor_games$mckib001_ops_todate,tor_games$pillk001_ops_todate,tor_games$smoaj001_ops_todate,tor_games$sogae001_ops_todate,tor_games$tellr001_ops_todate)
 names(tor_games_test) <- c('game_date','tor_runs','game_park_factor','tor_home','opp_pitcher_whip','opp_team_der','drurb001_ops','bichb001_ops','biggc002_ops','davij007_ops','fishd001_ops','galvf001_ops','gricr001_ops','guerv002_ops','hernt002_ops','gurrl001_ops','jansd001_ops','maill001_ops','mcgur002_ops','mckib001_ops','pillk001_ops','smoaj001_ops','sogae001_ops','tellr001_ops')
 tor_games_test <- tor_games_test %>% filter(game_date > 20190409)
 tor_games_test = subset(tor_games_test, select = -c(game_date))
 head(tor_games_test)
+```
+
+## 2. Distribution of variables
+
+#### Dependent variable (y) - Toronto runs scored
+```{r}
+library(ggplot2)
+ggplot(tor_games_training, aes(x=tor_runs, y=..count..)) + geom_histogram(binwidth=1, alpha=0.5, color="darkblue", fill="lightblue") + geom_density(alpha=0, color="darkblue") +  labs(title="Histogram of Toronto runs scored (y)") + geom_vline(aes(xintercept=mean(tor_runs)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(tor_runs), label=round(mean(tor_runs),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+```
+
+#### Independent variable (x3) - Opposition pitcher WHIP
+```{r warning=FALSE, message=FALSE}
+require(gridExtra)
+whip_training <- ggplot(tor_games_training, aes(x=opp_pitcher_whip, y=..count..)) + geom_histogram(binwidth=0.25, alpha=0.5, color="darkblue", fill="lightblue") + scale_x_continuous(limits=c(-0.5,4.5),breaks=seq(0,4,0.5)) + scale_y_continuous(limits=c(0,60),breaks=seq(0,50,10)) + geom_density(aes(y=0.25*..count..), alpha=0, color="darkblue") + labs(title="Histogram of Opposition pitcher\nWHIP (x3) - Training set (by game)") + geom_vline(aes(xintercept=mean(opp_pitcher_whip)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(opp_pitcher_whip), label=round(mean(opp_pitcher_whip),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+whip_test <- ggplot(tor_games_test, aes(x=opp_pitcher_whip, y=..count..)) + geom_histogram(binwidth=0.25, alpha=0.5, color="darkblue", fill="lightblue") + scale_x_continuous(limits=c(-0.5,4.5),breaks=seq(0,4,0.5)) + scale_y_continuous(limits=c(0,60),breaks=seq(0,50,10)) + geom_density(aes(y=0.25*..count..), alpha=0, color="darkblue") + labs(title="Histogram of Opposition pitcher\nWHIP (x3) - Test set (average to date)") + geom_vline(aes(xintercept=mean(opp_pitcher_whip)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(opp_pitcher_whip), label=round(mean(opp_pitcher_whip),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+grid.arrange(whip_training, whip_test, ncol=2)
+```
+
+#### Independent variable (x4) - Opposition team DER
+```{r warning=FALSE}
+require(gridExtra)
+der_training <- ggplot(tor_games_training, aes(x=opp_team_der, y=..count..)) + geom_histogram(binwidth=0.1, alpha=0.5, color="darkblue", fill="lightblue") + scale_x_continuous(limits=c(0.4,1.1),breaks=seq(0.5,1,0.1)) + scale_y_continuous(limits=c(0,90),breaks=seq(0,70,10)) + geom_density(aes(y=0.1*..count..), alpha=0, color="darkblue") + labs(title="Histogram of Opposition team DER\n(x4) - Training set (by game)") + geom_vline(aes(xintercept=mean(opp_team_der)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(opp_team_der), label=round(mean(opp_team_der),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+der_test <- ggplot(tor_games_test, aes(x=opp_team_der, y=..count..)) + geom_histogram(binwidth=0.02, alpha=0.5, color="darkblue", fill="lightblue") + scale_x_continuous(limits=c(0.4,1.1),breaks=seq(0.5,1,0.1)) + scale_y_continuous(limits=c(0,90),breaks=seq(0,70,10)) + geom_density(aes(y=0.02*..count..), alpha=0, color="darkblue") + labs(title="Histogram of Opposition team DER\n(x4) - Test set (average to date)") + geom_vline(aes(xintercept=mean(opp_team_der)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(opp_team_der), label=round(mean(opp_team_der),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+grid.arrange(der_training, der_test, ncol=2)
+```
+
+#### Independent variable (x7) - Cavan Biggio OPS
+<img src="images/Cavan_Biggio.png" alt="Cavan Biggio" width="25%" />
+
+```{r warning=FALSE}
+require(gridExtra)
+biggc002_training <- ggplot(tor_games_training, aes(x=biggc002_ops, y=..count..)) + geom_histogram(binwidth=0.25, alpha=0.5, color="darkblue", fill="lightblue") + scale_x_continuous(limits=c(-0.25,3),breaks=seq(0,3,0.5)) + scale_y_continuous(limits=c(0,90),breaks=seq(0,90,10)) + geom_density(aes(y=0.25*..count..),alpha=0,color="darkblue") + labs(title="Histogram of Cavan Biggio OPS\n(x7) - Training set (by game)") + geom_vline(aes(xintercept=mean(biggc002_ops)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(biggc002_ops), label=round(mean(biggc002_ops),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+biggc002_test <- ggplot(tor_games_test, aes(x=biggc002_ops, y=..count..)) + geom_histogram(binwidth=0.25, alpha=0.5, color="darkblue", fill="lightblue") + scale_x_continuous(limits=c(-0.25,3),breaks=seq(0,3,0.5)) + scale_y_continuous(limits=c(0,90),breaks=seq(0,90,10)) + geom_density(aes(y=0.25*..count..),alpha=0, color="darkblue") + labs(title="Histogram of Cavan Biggio OPS\n(x7) - Test set (average to date)") + geom_vline(aes(xintercept=mean(biggc002_ops)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(biggc002_ops), label=round(mean(biggc002_ops),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+grid.arrange(biggc002_training, biggc002_test, ncol=2)
+```
+
+#### Independent variable (x11) - Randal Grichuk OPS
+<img src="images/Randal_Grichuk.png" alt="Randal Grichuk" width="25%" />
+
+```{r warning=FALSE}
+require(gridExtra)
+gricr001_training <- ggplot(tor_games_training, aes(x=gricr001_ops, y=..count..)) + geom_histogram(binwidth=0.25, alpha=0.5, color="darkblue", fill="lightblue") + scale_x_continuous(limits=c(-0.25,3),breaks=seq(0,3,0.5)) + scale_y_continuous(limits=c(0,540),breaks=seq(0,160,40)) + geom_density(aes(y=0.25*..count..),alpha=0,color="darkblue") + labs(title="Histogram of Randal Grichuk OPS\n(x11) - Training set (by game)") + geom_vline(aes(xintercept=mean(gricr001_ops)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(gricr001_ops), label=round(mean(gricr001_ops),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+gricr001_test <- ggplot(tor_games_test, aes(x=gricr001_ops, y=..count..)) + geom_histogram(binwidth=0.25, alpha=0.5, color="darkblue", fill="lightblue") + scale_x_continuous(limits=c(-0.25,3),breaks=seq(0,3,0.5)) + scale_y_continuous(limits=c(0,540),breaks=seq(0,160,40)) + geom_density(aes(y=0.25*..count..),alpha=0, color="darkblue") + labs(title="Histogram of Randal Grichuk OPS\n(x11) - Test set (average to date)") + geom_vline(aes(xintercept=mean(gricr001_ops)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(gricr001_ops), label=round(mean(gricr001_ops),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+grid.arrange(gricr001_training, gricr001_test, ncol=2)
+```
+
+#### Independent variable (x12) - Vladimir Guerrero Jr OPS
+<img src="images/Vladimir_Guerrero_Jr.png" alt="Vladimir Guerrero Jr" width="25%" />
+
+```{r warning=FALSE}
+require(gridExtra)
+guerv002_training <- ggplot(tor_games_training, aes(x=guerv002_ops, y=..count..)) + geom_histogram(binwidth=0.25, alpha=0.5, color="darkblue", fill="lightblue") + scale_x_continuous(limits=c(-0.25,3),breaks=seq(0,3,0.5)) + scale_y_continuous(limits=c(0,130),breaks=seq(0,120,20)) + geom_density(aes(y=0.25*..count..),alpha=0,color="darkblue") + labs(title="Histogram of Vladimir Guerrero Jr\nOPS (x12) - Training set (by game)") + geom_vline(aes(xintercept=mean(guerv002_ops)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(guerv002_ops), label=round(mean(guerv002_ops),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+guerv002_test <- ggplot(tor_games_test, aes(x=guerv002_ops, y=..count..)) + geom_histogram(binwidth=0.25, alpha=0.5, color="darkblue", fill="lightblue") + scale_x_continuous(limits=c(-0.25,3),breaks=seq(0,3,0.5)) + scale_y_continuous(limits=c(0,130),breaks=seq(0,120,20)) + geom_density(aes(y=0.25*..count..),alpha=0, color="darkblue") + labs(title="Histogram of Vladimir Guerrero Jr\nOPS (x12) - Test set (average to date)") + geom_vline(aes(xintercept=mean(guerv002_ops)), color="red", linetype="dashed", size=0.5) + geom_text(aes(x=mean(guerv002_ops), label=round(mean(guerv002_ops),2), y=0), colour="red", angle=0, vjust=-1) + theme_classic()
+grid.arrange(guerv002_training, guerv002_test, ncol=2)
 ```
 
 ## 2. Train regression models
@@ -175,7 +232,7 @@ abline(lm(regtree_preds~tor_games_training$tor_runs), col="red")
 
 ### evaluate model on Test data
 ```{r}
-model_predict_test <- predict(model_fit, tor_games_test)
+model_predict_test <- predict(model_linreg, tor_games_test)
 actuals_preds_test <- data.frame(cbind(actuals=tor_games_test$tor_runs, predicteds=model_predict_test))
 correlation_accuracy_test <- cor(actuals_preds_test)
 ```
