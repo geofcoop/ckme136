@@ -96,7 +96,8 @@ abline(lm(actuals_preds_training$actuals~actuals_preds_training$predicteds), col
 ```{r}
 model_predict_test <- predict(model_fit, tor_games_test)
 actuals_preds_test <- data.frame(cbind(actuals=tor_games_test$tor_runs, predicteds=model_predict_test))
-correlation_accuracy_test <- cor(actuals_preds_test)
+# correlation_accuracy_test <- cor(actuals_preds_test)
+correlation_accuracy_test <- cor(actuals_preds_test$actuals, y=actuals_preds_test$predicteds, method=c("spearman"))
 ```
 #### correlation of runs/game, Test data, actuals vs predicteds
 ```{r}
@@ -165,7 +166,8 @@ summary(model_fit)
 ```{r}
 model_predict_test <- predict(model_fit, tor_games_test)
 actuals_preds_test <- data.frame(cbind(actuals=tor_games_test$tor_runs, predicteds=model_predict_test))
-correlation_accuracy_test <- cor(actuals_preds_test)
+# correlation_accuracy_test <- cor(actuals_preds_test)
+correlation_accuracy_test <- cor(actuals_preds_test$actuals, y=actuals_preds_test$predicteds, method=c("spearman"))
 ```
 #### correlation, Test data, actuals vs predicteds
 ```{r}
