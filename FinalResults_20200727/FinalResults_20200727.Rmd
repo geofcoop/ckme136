@@ -338,7 +338,7 @@ summary(model_linreg_final)
 ## 4d. Evaluate model - Linear regression - final
 ```{r}
 linreg_predict_final <- predict(model_linreg_final, tor_games_test)
-linreg_actuals_preds_test <- data.frame(cbind(actuals=tor_games_test$tor_runs, predicteds=linreg_predict_final))
+linreg_actuals_preds_test <- data.frame(cbind(actuals=tor_games_test$tor_runs, predicteds=linreg_predict_test))
 correlation_accuracy_test <- cor(linreg_actuals_preds_test$actuals, y=linreg_actuals_preds_test$predicteds, method=c("spearman"))
 # head(linreg_actuals_preds_test)
 print("Correlation (r) - Predicted vs Actual")
